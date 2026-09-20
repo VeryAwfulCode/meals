@@ -69,11 +69,41 @@ export function saveState(state: AppState): void {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 }
 
+const DONE_HISTORY_DAYS = 14;
+
+function pruneDoneMeals(dm: Record<string, number[]> | undefined): Record<string, number[]> {
+  if (!dm) return {};
+  const cutoff = new Date();
+  cutoff.setHours(0, 0, 0, 0);
+  cutoff.setDate(cutoff.getDate() - DONE_HISTORY_DAYS);
+  const out: Record<string, number[]> = {};
+  for (const [key, list] of Object.entries(dm)) {
+    const d = new Date(key + "T00:00:00");
+    if (!isNaN(d.getTime()) && d >= cutoff) out[key] = list;
+  }
+  return out;
+}
+
 export function loadInitialState(): AppState {
   try {
     const v2 = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "null");
     if (v2?.presets && v2?.currentPresetId) {
       v2.swipeEnabled ??= false;
+      v2.doneMeals = pruneDoneMeals(v2.doneMeals);
+      const unsaved: string[] = Array.isArray(v2.unsavedIds) ? v2.unsavedIds : [];
+      for (const id of unsaved) delete v2.presets[id];
+      v2.unsavedIds = [];
+      if (!v2.presets[v2.currentPresetId]) {
+        const firstId = Object.keys(v2.presets)[0];
+        if (firstId) {
+          v2.currentPresetId = firstId;
+        } else {
+          const id = uid();
+          v2.presets = { [id]: presetDefaults() };
+          v2.currentPresetId = id;
+        }
+        v2.editing = clone(v2.presets[v2.currentPresetId]);
+      }
       Object.values(v2.presets).forEach((p) =>
         migratePreset(p as Record<string, unknown>)
       );
@@ -103,6 +133,7 @@ function makeInitialState(id: string, p: Preset): AppState {
     notificationsEnabled: false,
     swipeEnabled: false,
     doneMeals: {},
+    unsavedIds: [],
   };
 }
 

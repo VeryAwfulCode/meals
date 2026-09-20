@@ -79,7 +79,9 @@ interface StoreContextValue {
   isDone: (mealNum: number) => boolean;
 
   // Preferences
-  setNotificationsEnabled: (v: boolean) => Promise<void>;
+  setNotificationsEnabled: (
+    v: boolean
+  ) => Promise<"ok" | "unsupported" | "denied">;
   setSwipeEnabled: (v: boolean) => void;
 
   // Export / import
@@ -104,13 +106,45 @@ const StoreContext = createContext<StoreContextValue | null>(null);
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [state, setStateRaw] = useState<AppState>(loadInitialState);
 
+  const pendingSave = useRef<AppState | null>(null);
+  const saveTimer = useRef<number | null>(null);
+
+  const flushSave = useCallback(() => {
+    if (saveTimer.current !== null) {
+      window.clearTimeout(saveTimer.current);
+      saveTimer.current = null;
+    }
+    if (pendingSave.current) {
+      saveState(pendingSave.current);
+      pendingSave.current = null;
+    }
+  }, []);
+
   const setState = useCallback((updater: (s: AppState) => AppState) => {
     setStateRaw((s) => {
       const next = updater(s);
-      saveState(next);
+      pendingSave.current = next;
+      if (saveTimer.current !== null) window.clearTimeout(saveTimer.current);
+      saveTimer.current = window.setTimeout(flushSave, 250);
       return next;
     });
-  }, []);
+  }, [flushSave]);
+
+  useEffect(() => {
+    const onHide = () => flushSave();
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") flushSave();
+    };
+    window.addEventListener("beforeunload", onHide);
+    window.addEventListener("pagehide", onHide);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      window.removeEventListener("beforeunload", onHide);
+      window.removeEventListener("pagehide", onHide);
+      document.removeEventListener("visibilitychange", onVisibility);
+      flushSave();
+    };
+  }, [flushSave]);
 
   const updateEditing = useCallback(
     (fn: (p: Preset) => void) => {
@@ -162,23 +196,31 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   );
 
   const isDirty = useMemo(() => {
+    if (state.unsavedIds.includes(state.currentPresetId)) return true;
     const saved = state.presets[state.currentPresetId];
     if (!saved) return false;
     return fingerprint(state.editing) !== fingerprint(saved);
-  }, [state.editing, state.presets, state.currentPresetId]);
+  }, [state.editing, state.presets, state.currentPresetId, state.unsavedIds]);
 
   // ── Notification scheduling ─────────────────────────────────────────────────
 
   const notifTimers = useRef<number[]>([]);
+  const notifKey = useMemo(
+    () => JSON.stringify({ n: state.editing.names, d: state.editing.days }),
+    [state.editing.names, state.editing.days]
+  );
+  const presetRef = useRef(state.editing);
+  useEffect(() => {
+    presetRef.current = state.editing;
+  }, [state.editing]);
 
   useEffect(() => {
     notifTimers.current.forEach(clearTimeout);
     notifTimers.current = [];
     if (!state.notificationsEnabled || !rawTimes.length) return;
     if (!("Notification" in window) || Notification.permission !== "granted") return;
-    if (!isActiveToday(state.editing)) return;
+    if (!isActiveToday(presetRef.current)) return;
 
-    const preset = state.editing;
     const today0 = new Date();
     today0.setHours(0, 0, 0, 0);
     const now = Date.now();
@@ -189,7 +231,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       if (delay > 500 && delay < 26 * 3600 * 1000) {
         const id = window.setTimeout(() => {
           try {
-            new Notification(preset.names[i + 1] || `Meal ${i + 1}`, {
+            new Notification(presetRef.current.names[i + 1] || `Meal ${i + 1}`, {
               body: `Time: ${fmtTime(mins)}`,
               icon: "icon.svg",
               tag: `meal-${state.currentPresetId}-${i + 1}`,
@@ -204,7 +246,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       notifTimers.current.forEach(clearTimeout);
       notifTimers.current = [];
     };
-  }, [rawTimes, state.notificationsEnabled, state.editing, state.currentPresetId]);
+  }, [rawTimes, state.notificationsEnabled, state.currentPresetId, notifKey]);
 
   // ── Preset field setters ────────────────────────────────────────────────────
 
@@ -333,16 +375,32 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setState((s) => ({
         ...s,
         presets: { ...s.presets, [s.currentPresetId]: clone(s.editing) },
+        unsavedIds: s.unsavedIds.filter((id) => id !== s.currentPresetId),
       })),
     [setState]
   );
 
   const discardChanges = useCallback(
     () =>
-      setState((s) => ({
-        ...s,
-        editing: clone(s.presets[s.currentPresetId]),
-      })),
+      setState((s) => {
+        // For never-saved presets, discard means delete — there is nothing to revert to.
+        if (s.unsavedIds.includes(s.currentPresetId) && Object.keys(s.presets).length > 1) {
+          const ids = Object.keys(s.presets);
+          const idx = ids.indexOf(s.currentPresetId);
+          const next = { ...s.presets };
+          delete next[s.currentPresetId];
+          const remaining = ids.filter((id) => id !== s.currentPresetId);
+          const newId = remaining[Math.min(idx, remaining.length - 1)];
+          return {
+            ...s,
+            presets: next,
+            currentPresetId: newId,
+            editing: clone(next[newId]),
+            unsavedIds: s.unsavedIds.filter((id) => id !== s.currentPresetId),
+          };
+        }
+        return { ...s, editing: clone(s.presets[s.currentPresetId]) };
+      }),
     [setState]
   );
 
@@ -363,6 +421,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       presets: { ...s.presets, [id]: p },
       currentPresetId: id,
       editing: clone(p),
+      unsavedIds: [...s.unsavedIds, id],
     }));
     return id;
   }, [setState]);
@@ -380,6 +439,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           presets: { ...s.presets, [id]: p },
           currentPresetId: id,
           editing: clone(p),
+          unsavedIds: [...s.unsavedIds, id],
         };
       }),
     [setState]
@@ -390,10 +450,19 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setState((s) => {
       if (Object.keys(s.presets).length <= 1) return s;
       deleted = true;
+      const ids = Object.keys(s.presets);
+      const idx = ids.indexOf(s.currentPresetId);
       const next = { ...s.presets };
       delete next[s.currentPresetId];
-      const newId = Object.keys(next)[0];
-      return { ...s, presets: next, currentPresetId: newId, editing: clone(next[newId]) };
+      const remaining = ids.filter((id) => id !== s.currentPresetId);
+      const newId = remaining[Math.min(idx, remaining.length - 1)];
+      return {
+        ...s,
+        presets: next,
+        currentPresetId: newId,
+        editing: clone(next[newId]),
+        unsavedIds: s.unsavedIds.filter((id) => id !== s.currentPresetId),
+      };
     });
     return deleted;
   }, [setState]);
@@ -419,8 +488,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         const i = today.indexOf(mealNum);
         if (i >= 0) today.splice(i, 1);
         else today.push(mealNum);
-        const cleaned: Record<string, number[]> = { [key]: today };
-        return { ...s, doneMeals: cleaned };
+        return { ...s, doneMeals: { ...s.doneMeals, [key]: today } };
       }),
     [setState]
   );
@@ -434,14 +502,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   // ── Preferences ─────────────────────────────────────────────────────────────
 
   const setNotificationsEnabled = useCallback(
-    async (v: boolean): Promise<void> => {
+    async (v: boolean): Promise<"ok" | "unsupported" | "denied"> => {
       if (v) {
-        if (!("Notification" in window)) return;
+        if (!("Notification" in window)) return "unsupported";
         let perm = Notification.permission;
         if (perm === "default") perm = await Notification.requestPermission();
-        if (perm !== "granted") return;
+        if (perm !== "granted") return "denied";
       }
       setState((s) => ({ ...s, notificationsEnabled: v }));
+      return "ok";
     },
     [setState]
   );

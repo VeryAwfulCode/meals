@@ -29,4 +29,5 @@ export interface AppState {
   notificationsEnabled: boolean;
   swipeEnabled: boolean;
   doneMeals: Record<string, number[]>; // "YYYY-MM-DD" -> meal numbers
+  unsavedIds: string[]; // presets created this session and not yet saved
 }

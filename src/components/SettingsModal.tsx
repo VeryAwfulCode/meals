@@ -17,15 +17,40 @@ import {
   TextInput,
 } from "@mantine/core";
 import { Copy, Download, Minus, Plus, Trash, Upload, X } from "lucide-react";
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { GapAnchorType, ScheduleMode } from "../types";
 import { useStore } from "../store";
+import { useDialog } from "./DialogProvider";
 
 const DAY_LABELS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 
 interface Props {
   opened: boolean;
   onClose: () => void;
+}
+
+// ─── Gap input (local state + blur commit) ───────────────────────────────────
+
+function GapInput({ value, onCommit }: { value: number; onCommit: (n: number) => void }) {
+  const [local, setLocal] = useState<number | string>(value);
+  useEffect(() => setLocal(value), [value]);
+
+  return (
+    <NumberInput
+      label="Gap (hours)"
+      value={local}
+      onChange={setLocal}
+      onBlur={() => {
+        if (typeof local === "number" && !isNaN(local)) onCommit(local);
+        else setLocal(value);
+      }}
+      min={0.25}
+      max={12}
+      step={0.25}
+      decimalScale={2}
+      clampBehavior="strict"
+    />
+  );
 }
 
 // ─── Meals tab ────────────────────────────────────────────────────────────────
@@ -149,15 +174,7 @@ function MealsTab() {
 
       {preset.mode === "gap" && (
         <Stack gap="xs">
-          <NumberInput
-            label="Gap (hours)"
-            value={preset.gap}
-            onChange={(v) => typeof v === "number" && setGap(v)}
-            min={0.25}
-            max={12}
-            step={0.25}
-            decimalScale={2}
-          />
+          <GapInput value={preset.gap} onCommit={setGap} />
           <div>
             <Text size="sm" mb="xs">
               Anchor on
@@ -339,13 +356,30 @@ function PrefsTab() {
     setNotificationsEnabled,
     setSwipeEnabled,
   } = useStore();
+  const { toast } = useDialog();
+
+  async function handleNotifications(v: boolean) {
+    const result = await setNotificationsEnabled(v);
+    if (result === "unsupported") {
+      toast({
+        message: "Notifications aren't supported in this browser.",
+        color: "yellow",
+      });
+    } else if (result === "denied") {
+      toast({
+        message:
+          "Notification permission was denied. Enable it in your browser settings to receive meal reminders.",
+        color: "red",
+      });
+    }
+  }
 
   return (
     <Stack gap="sm">
       <Switch
         label="Notifications"
         checked={notificationsEnabled}
-        onChange={(e) => setNotificationsEnabled(e.target.checked)}
+        onChange={(e) => handleNotifications(e.target.checked)}
       />
       <Switch
         label="Swipe to mark done"
@@ -360,6 +394,7 @@ function PrefsTab() {
 
 export function SettingsModal({ opened, onClose }: Props) {
   const {
+    preset: currentPreset,
     isDirty,
     savePreset,
     discardChanges,
@@ -371,11 +406,47 @@ export function SettingsModal({ opened, onClose }: Props) {
   } = useStore();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { confirm, toast } = useDialog();
 
-  function handleDelete() {
-    if (!confirm("Delete this preset?")) return;
+  async function handleDelete() {
+    const ok = await confirm({
+      title: "Delete preset",
+      message: `Delete "${currentPreset.name || "Untitled"}"? This cannot be undone.`,
+      confirmLabel: "Delete",
+      danger: true,
+    });
+    if (!ok) return;
     const deleted = deletePreset();
     if (deleted) onClose();
+  }
+
+  function handleSave() {
+    savePreset();
+    onClose();
+  }
+
+  async function triggerImport() {
+    if (isDirty) {
+      const ok = await confirm({
+        title: "Discard unsaved changes?",
+        message: "Importing a preset will discard your current unsaved changes.",
+        confirmLabel: "Discard & import",
+        danger: true,
+      });
+      if (!ok) return;
+    }
+    fileInputRef.current?.click();
+  }
+
+  async function handleImportFile(file: File) {
+    try {
+      await importPreset(file);
+    } catch (err) {
+      toast({
+        message: `Import failed: ${err instanceof Error ? err.message : "invalid file"}`,
+        color: "red",
+      });
+    }
   }
 
   return (
@@ -413,7 +484,7 @@ export function SettingsModal({ opened, onClose }: Props) {
       <Stack gap="xs" p="md">
         {isDirty && (
           <Group grow>
-            <Button onClick={savePreset}>Save changes</Button>
+            <Button onClick={handleSave}>Save changes</Button>
             <Button variant="default" onClick={discardChanges}>
               Discard
             </Button>
@@ -440,7 +511,7 @@ export function SettingsModal({ opened, onClose }: Props) {
             size="xs"
             variant="default"
             leftSection={<Upload size={12} />}
-            onClick={() => fileInputRef.current?.click()}
+            onClick={triggerImport}
           >
             Import
           </Button>
@@ -471,7 +542,7 @@ export function SettingsModal({ opened, onClose }: Props) {
         style={{ display: "none" }}
         onChange={async (e) => {
           const file = e.target.files?.[0];
-          if (file) await importPreset(file);
+          if (file) await handleImportFile(file);
           e.target.value = "";
         }}
       />

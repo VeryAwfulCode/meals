@@ -69,7 +69,7 @@ export function Clock({ times, nextIdx, size = 320 }: ClockProps) {
   const { colorScheme } = useMantineColorScheme();
   const C = colorScheme === "light" ? catppuccin.latte : catppuccin.mocha;
   const [now, setNow] = useState(() => new Date());
-  useInterval(() => setNow(new Date()), 1000);
+  useInterval(() => setNow(new Date()), 1000, { autoInvoke: true });
 
   const nowMins =
     now.getHours() * 60 + now.getMinutes() + now.getSeconds() / 60;

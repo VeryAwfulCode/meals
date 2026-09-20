@@ -12,6 +12,7 @@ import {
 import { generateColors } from "@mantine/colors-generator";
 import { catppuccin } from "./catppuccin.ts";
 import { StoreProvider } from "./store.tsx";
+import { DialogProvider } from "./components/DialogProvider.tsx";
 
 const resolver: CSSVariablesResolver = () => ({
   variables: {},
@@ -70,9 +71,11 @@ createRoot(document.getElementById("root")!).render(
       cssVariablesResolver={resolver}
       defaultColorScheme="dark"
     >
-      <StoreProvider>
-        <App />
-      </StoreProvider>
+      <DialogProvider>
+        <StoreProvider>
+          <App />
+        </StoreProvider>
+      </DialogProvider>
     </MantineProvider>
   </StrictMode>,
 );

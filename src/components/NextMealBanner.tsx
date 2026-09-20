@@ -11,7 +11,7 @@ interface Props {
 export function NextMealBanner({ nextIdx }: Props) {
   const { preset, rawTimes, doneMeals } = useStore();
   const [, setTick] = useState(0);
-  useInterval(() => setTick((t) => t + 1), 30000);
+  useInterval(() => setTick((t) => t + 1), 30000, { autoInvoke: true });
 
   if (!rawTimes.length) return null;
 

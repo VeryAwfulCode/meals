@@ -18,7 +18,7 @@ function App() {
 
   // Tick every 30s so nextIdx and countdown stay current without a store change
   const [, setTick] = useState(0);
-  useInterval(() => setTick((t) => t + 1), 30000);
+  useInterval(() => setTick((t) => t + 1), 30000, { autoInvoke: true });
   const nextIdx = currentNextIdx(rawTimes, doneMeals);
 
   return (
