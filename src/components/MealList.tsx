@@ -37,7 +37,6 @@ export function MealList({ nextIdx }: Props) {
               alignItems: "center",
               gap: "0.75rem",
               padding: "0.75rem 0.5rem",
-              borderBottom: `1px solid ${C.surface1}`,
               background: "transparent",
               border: "none",
               borderBottom: `1px solid ${C.surface1}`,

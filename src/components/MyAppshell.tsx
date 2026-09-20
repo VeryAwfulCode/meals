@@ -1,4 +1,10 @@
-import { AppShell, Group, Text, useMantineColorScheme } from "@mantine/core";
+import {
+  ActionIcon,
+  AppShell,
+  Group,
+  Text,
+  useMantineColorScheme,
+} from "@mantine/core";
 import { Cog, Drumstick } from "lucide-react";
 import type { ReactNode } from "react";
 import { catppuccin } from "../catppuccin";
@@ -32,11 +38,25 @@ export function MyAppshell({ children, onSettingsClick }: MyAppshellProps) {
           align="center"
           wrap="nowrap"
           gap="sm"
-          style={{ height: "100%", width: "90%", maxWidth: "900px", margin: "0 auto" }}
+          style={{
+            height: "100%",
+            width: "90%",
+            maxWidth: "900px",
+            margin: "0 auto",
+          }}
         >
           <Logo />
           <PresetsBar />
-          <Cog size={20} style={{ cursor: "pointer", flexShrink: 0 }} onClick={onSettingsClick} />
+          <ActionIcon
+            variant="subtle"
+            color="gray"
+            size="md"
+            onClick={onSettingsClick}
+            aria-label="Settings"
+            style={{ flexShrink: 0 }}
+          >
+            <Cog size={20} />
+          </ActionIcon>
         </Group>
       </AppShell.Header>
       <AppShell.Main>

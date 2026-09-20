@@ -17,7 +17,14 @@ export function PresetsBar() {
 
   return (
     <Group gap="xs" wrap="nowrap" style={{ flex: 1, minWidth: 0 }}>
-      <Box style={{ flex: 1, minWidth: 0, overflowX: "auto", scrollbarWidth: "none" }}>
+      <Box
+        style={{
+          flex: 1,
+          minWidth: 0,
+          overflowX: "auto",
+          scrollbarWidth: "none",
+        }}
+      >
         <Group gap={6} wrap="nowrap" pb={2}>
           {Object.entries(presets).map(([id, p]) => {
             const isActive = id === currentPresetId;
@@ -35,7 +42,10 @@ export function PresetsBar() {
                     <Box
                       w={6}
                       h={6}
-                      style={{ borderRadius: "50%", background: "currentColor" }}
+                      style={{
+                        borderRadius: "50%",
+                        background: "currentColor",
+                      }}
                     />
                   ) : null
                 }
@@ -45,11 +55,14 @@ export function PresetsBar() {
             );
           })}
           <ActionIcon
-            variant="subtle"
+            variant="filled"
             size="sm"
             color="blue"
-            styles={{ root: { "&:hover": { backgroundColor: "var(--mantine-color-blue-2)" } } }}
             onClick={() => createPreset()}
+            style={{
+              "--ai-bg": "transparent",
+              "--ai-color": "white",
+            } as React.CSSProperties}
           >
             <Plus size={14} />
           </ActionIcon>
@@ -57,7 +70,12 @@ export function PresetsBar() {
       </Box>
 
       {isDirty && (
-        <Button size="compact-sm" variant="filled" onClick={savePreset} style={{ flexShrink: 0 }}>
+        <Button
+          size="compact-sm"
+          variant="filled"
+          onClick={savePreset}
+          style={{ flexShrink: 0 }}
+        >
           Save
         </Button>
       )}
