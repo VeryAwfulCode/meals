@@ -26,7 +26,7 @@ export function MyAppshell({ children }: { children: ReactNode }) {
           }}
         >
           <Logo />
-          <Cog size={18} />
+          <Cog size={20} style={{ cursor: "pointer" }} />
         </Group>
       </AppShell.Header>
       <AppShell.Main>
