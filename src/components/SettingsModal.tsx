@@ -16,21 +16,12 @@ import {
   Text,
   TextInput,
 } from "@mantine/core";
-import {
-  Copy,
-  Download,
-  Minus,
-  Plus,
-  Trash,
-  Upload,
-  X,
-} from "lucide-react";
+import { Copy, Download, Minus, Plus, Trash, Upload, X } from "lucide-react";
 import { useRef } from "react";
 import type { GapAnchorType, ScheduleMode } from "../types";
 import { useStore } from "../store";
 
 const DAY_LABELS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
-const WEEK_ORDER = [1, 2, 3, 4, 5, 6, 0]; // Mon–Sun
 
 interface Props {
   opened: boolean;
@@ -97,14 +88,24 @@ function MealsTab() {
         <Stack gap={4}>
           <Group gap={4} justify="center">
             {[1, 2, 3, 4, 5].map((day) => (
-              <Chip key={day} size="xs" checked={preset.days.includes(day)} onChange={() => toggleDay(day)}>
+              <Chip
+                key={day}
+                size="xs"
+                checked={preset.days.includes(day)}
+                onChange={() => toggleDay(day)}
+              >
                 {DAY_LABELS[day]}
               </Chip>
             ))}
           </Group>
           <Group gap={4} justify="center">
             {[6, 0].map((day) => (
-              <Chip key={day} size="xs" checked={preset.days.includes(day)} onChange={() => toggleDay(day)}>
+              <Chip
+                key={day}
+                size="xs"
+                checked={preset.days.includes(day)}
+                onChange={() => toggleDay(day)}
+              >
                 {DAY_LABELS[day]}
               </Chip>
             ))}
@@ -211,7 +212,7 @@ function MealsTab() {
                     size="sm"
                     onClick={() =>
                       setGapAnchorIdx(
-                        Math.min(preset.meals, preset.gapAnchorIdx + 1)
+                        Math.min(preset.meals, preset.gapAnchorIdx + 1),
                       )
                     }
                   >
@@ -259,7 +260,7 @@ function MealsTab() {
                   onClick={() =>
                     updateAnchorIdx(
                       i,
-                      Math.min(preset.meals - 1, anchor.idx + 1)
+                      Math.min(preset.meals - 1, anchor.idx + 1),
                     )
                   }
                 >
@@ -378,7 +379,13 @@ export function SettingsModal({ opened, onClose }: Props) {
   }
 
   return (
-    <Modal opened={opened} onClose={onClose} title="Settings" size="sm" styles={{ body: { padding: 0 } }}>
+    <Modal
+      opened={opened}
+      onClose={onClose}
+      title="Settings"
+      size="sm"
+      styles={{ body: { padding: 0 } }}
+    >
       <Tabs defaultValue="meals">
         <Tabs.List grow>
           <Tabs.Tab value="meals">Meals</Tabs.Tab>
