@@ -13,9 +13,9 @@ import { catppuccin } from "./catppuccin.ts";
 import { MyAppshell } from "./components/MyAppshell.tsx";
 
 const resolver: CSSVariablesResolver = () => ({
-  variables: { "--mantine-color-body": catppuccin.mocha.base },
-  light: {},
-  dark: {},
+  variables: {},
+  light: { "--mantine-color-body": catppuccin.latte.base },
+  dark: { "--mantine-color-body": catppuccin.mocha.mantle },
 });
 
 const theme = createTheme({

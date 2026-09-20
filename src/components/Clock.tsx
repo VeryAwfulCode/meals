@@ -1,8 +1,7 @@
+import { useMantineColorScheme } from "@mantine/core";
 import { useInterval } from "@mantine/hooks";
 import { useState } from "react";
 import { catppuccin } from "../catppuccin";
-
-const C = catppuccin.mocha;
 
 const CX = 110,
   CY = 110;
@@ -67,6 +66,8 @@ interface ClockProps {
 }
 
 export function Clock({ times, nextIdx, size = 320 }: ClockProps) {
+  const { colorScheme } = useMantineColorScheme();
+  const C = colorScheme === "light" ? catppuccin.latte : catppuccin.mocha;
   const [now, setNow] = useState(() => new Date());
   useInterval(() => setNow(new Date()), 1000);
 
@@ -99,7 +100,7 @@ export function Clock({ times, nextIdx, size = 320 }: ClockProps) {
         cx={CX}
         cy={CY}
         r={R_FACE}
-        fill={C.surface0}
+        fill={C.base}
         stroke={C.surface1}
         strokeWidth={1}
       />
@@ -148,7 +149,7 @@ export function Clock({ times, nextIdx, size = 320 }: ClockProps) {
               cx={p.x}
               cy={p.y}
               r={9}
-              fill={item.isPM ? C.blue : C.surface0}
+              fill={item.isPM ? C.blue : C.base}
               stroke={C.blue}
               strokeWidth={item.i === nextIdx ? 3 : 2}
             />

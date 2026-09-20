@@ -1,6 +1,7 @@
-import { AppShell, Group, Text } from "@mantine/core";
+import { AppShell, Group, Text, useMantineColorScheme } from "@mantine/core";
 import { Cog, Drumstick } from "lucide-react";
 import type { ReactNode } from "react";
+import { catppuccin } from "../catppuccin";
 
 function Logo() {
   return (
@@ -12,8 +13,14 @@ function Logo() {
 }
 
 export function MyAppshell({ children }: { children: ReactNode }) {
+  const { colorScheme } = useMantineColorScheme();
+  const C = colorScheme === "light" ? catppuccin.latte : catppuccin.mocha;
+
   return (
-    <AppShell header={{ height: 45 }}>
+    <AppShell
+      header={{ height: 45 }}
+      styles={{ header: { borderBottom: `1px solid ${C.surface1}` } }}
+    >
       <AppShell.Header>
         <Group
           align="center"
