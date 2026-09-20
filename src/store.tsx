@@ -143,11 +143,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const computeResult = useMemo(() => compute(state.editing), [state.editing]);
 
-  const rawTimes = useMemo(() => {
-    if (computeResult.error) return [];
-    return state.editing.round30
-      ? computeResult.times.map((t) => Math.round(t / 30) * 30)
-      : computeResult.times;
+  const rawTimes = useMemo((): number[] => {
+    const t = computeResult.times ?? [];
+    if (!t.length) return [];
+    return state.editing.round30 ? t.map((v) => Math.round(v / 30) * 30) : t;
   }, [computeResult, state.editing.round30]);
 
   const times = useMemo(() => rawTimes.map(fmtTime), [rawTimes]);

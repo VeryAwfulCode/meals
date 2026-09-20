@@ -5,12 +5,12 @@ import "@mantine/core/styles.css";
 import {
   createTheme,
   type CSSVariablesResolver,
+  type MantineColorsTuple,
   MantineProvider,
   Text,
 } from "@mantine/core";
 import { generateColors } from "@mantine/colors-generator";
 import { catppuccin } from "./catppuccin.ts";
-import { MyAppshell } from "./components/MyAppshell.tsx";
 import { StoreProvider } from "./store.tsx";
 
 const resolver: CSSVariablesResolver = () => ({
@@ -21,7 +21,7 @@ const resolver: CSSVariablesResolver = () => ({
 
 const theme = createTheme({
   fontFamily: "Space Grotesk, sans-serif",
-  primaryShade: 2, // generateColors sets original colors at index 2
+  primaryShade: 2,
   colors: {
     pink: generateColors(catppuccin.mocha.pink),
     red: generateColors(catppuccin.mocha.red),
@@ -29,6 +29,18 @@ const theme = createTheme({
     green: generateColors(catppuccin.mocha.green),
     teal: generateColors(catppuccin.mocha.teal),
     blue: generateColors(catppuccin.mocha.blue),
+    dark: [
+      catppuccin.mocha.text,
+      catppuccin.mocha.subtext1,
+      catppuccin.mocha.overlay2,
+      catppuccin.mocha.overlay1,
+      catppuccin.mocha.surface2,
+      catppuccin.mocha.surface1,
+      catppuccin.mocha.surface0,
+      catppuccin.mocha.base,
+      catppuccin.mocha.mantle,
+      catppuccin.mocha.crust,
+    ] as MantineColorsTuple,
   },
   components: {
     Button: {
@@ -59,9 +71,7 @@ createRoot(document.getElementById("root")!).render(
       defaultColorScheme="dark"
     >
       <StoreProvider>
-        <MyAppshell>
-          <App />
-        </MyAppshell>
+        <App />
       </StoreProvider>
     </MantineProvider>
   </StrictMode>,

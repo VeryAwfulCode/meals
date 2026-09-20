@@ -2,6 +2,7 @@ import { AppShell, Group, Text, useMantineColorScheme } from "@mantine/core";
 import { Cog, Drumstick } from "lucide-react";
 import type { ReactNode } from "react";
 import { catppuccin } from "../catppuccin";
+import { PresetsBar } from "./PresetsBar";
 
 function Logo() {
   return (
@@ -12,7 +13,12 @@ function Logo() {
   );
 }
 
-export function MyAppshell({ children }: { children: ReactNode }) {
+interface MyAppshellProps {
+  children: ReactNode;
+  onSettingsClick?: () => void;
+}
+
+export function MyAppshell({ children, onSettingsClick }: MyAppshellProps) {
   const { colorScheme } = useMantineColorScheme();
   const C = colorScheme === "light" ? catppuccin.latte : catppuccin.mocha;
 
@@ -24,16 +30,13 @@ export function MyAppshell({ children }: { children: ReactNode }) {
       <AppShell.Header>
         <Group
           align="center"
-          justify="space-between"
-          style={{
-            width: "90%",
-            maxWidth: "900px",
-            margin: "0 auto",
-            height: "100%",
-          }}
+          wrap="nowrap"
+          gap="sm"
+          style={{ height: "100%", width: "90%", maxWidth: "900px", margin: "0 auto" }}
         >
           <Logo />
-          <Cog size={20} style={{ cursor: "pointer" }} />
+          <PresetsBar />
+          <Cog size={20} style={{ cursor: "pointer", flexShrink: 0 }} onClick={onSettingsClick} />
         </Group>
       </AppShell.Header>
       <AppShell.Main>
